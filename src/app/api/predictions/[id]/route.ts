@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { type NextApiRequest } from 'next';
+import { NextResponse } from "next/server";
+// import { type NextApiRequest } from 'next';
 import Replicate from "replicate";
 
 interface PredictionResponse {
