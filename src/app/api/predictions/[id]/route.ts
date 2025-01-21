@@ -1,4 +1,4 @@
-// import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Replicate from "replicate";
 
 interface PredictionResponse {
@@ -13,21 +13,22 @@ const replicate = new Replicate({
 });
 
 export async function GET(
-  _request: Request,
-  { params }: { params: Record<string, string | string[]> }
-): Promise<Response> {
+  req: NextRequest,
+) {
   try {
-    const prediction = await replicate.predictions.get(params.id as string) as PredictionResponse;
-
-    if (prediction?.error) {
-      return Response.json({ error: prediction.error }, { status: 500 });
+    // Get ID from URL instead of params
+    const id = req.url.split('/').pop();
+    if (!id) {
+      return Response.json({ error: 'No ID provided' }, { status: 400 });
     }
 
+    const prediction = await replicate.predictions.get(id);
     return Response.json(prediction);
   } catch (error) {
-    if (error instanceof Error) {
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-    return Response.json({ error: 'An unknown error occurred' }, { status: 500 });
+    console.error('Error fetching prediction:', error);
+    return Response.json(
+      { error: 'Failed to fetch prediction' }, 
+      { status: 500 }
+    );
   }
 } 
