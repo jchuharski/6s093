@@ -3,8 +3,8 @@ import Replicate from "replicate";
 import OpenAI from 'openai';
 
 // Constants
-const REPLICATE_USERNAME = "sundai-club";
-const FINETUNED_MODEL_NAME = "ivy-cat-workshop-1";
+// const REPLICATE_USERNAME = "sundai-club";
+// const FINETUNED_MODEL_NAME = "ivy-cat-workshop-1";
 const MODEL_VERSION = "74382aeb7b42d67052fe93f7e4339ed79db43baa1ced8b9ac20025b02896a066";
 
 // Initialize Replicate client
