@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import Replicate from "replicate";
 
-interface PredictionResponse {
-  id: string;
-  status: string;
-  output?: string[];
-  error?: string;
-}
+// interface PredictionResponse {
+//   id: string;
+//   status: string;
+//   output?: string[];
+//   error?: string;
+// }
 
 const replicate = new Replicate({
   auth: process.env.API_KEY,
