@@ -19,6 +19,22 @@ const openai = new OpenAI({
   defaultQuery: { "api-version": "2024-02-15-preview" }
 });
 
+// Add these interfaces at the top of the file
+interface StoryPanel {
+  prompt: string;
+  caption: string;
+}
+
+interface StoryResponse {
+  comics: StoryPanel[];
+}
+
+interface ReplicatePrediction {
+  id: string;
+  status: string;
+  error?: string;
+}
+
 export async function POST(request: Request) {
   try {
     // Validate API keys first
@@ -73,7 +89,7 @@ Format the output as JSON with this structure:
 
     // Create predictions for each panel
     const predictions = await Promise.all(
-      storyJson.comics.map(async (panel: any, index: number) => {
+      storyJson.comics.map(async (panel: StoryPanel, index: number) => {
         console.log(`\n🖼️ Creating prediction for panel ${index + 1}`);
         
         const prediction = await replicate.predictions.create({
@@ -84,7 +100,7 @@ Format the output as JSON with this structure:
             guidance_scale: 10,
             model: "schnell"
           }
-        });
+        }) as ReplicatePrediction;
 
         console.log(`✅ Prediction created for panel ${index + 1}:`, prediction.id);
         
