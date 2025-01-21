@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import Replicate from "replicate";
 
+interface PredictionResponse {
+  id: string;
+  status: string;
+  output?: string[];
+  error?: string;
+}
+
 const replicate = new Replicate({
   auth: process.env.API_KEY,
 });
@@ -11,14 +18,17 @@ export async function GET(
 ) {
   try {
     const id = await params.id;
-    const prediction = await replicate.predictions.get(id);
+    const prediction = await replicate.predictions.get(id) as PredictionResponse;
 
     if (prediction?.error) {
       return NextResponse.json({ error: prediction.error }, { status: 500 });
     }
 
     return NextResponse.json(prediction);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: 'An unknown error occurred' }, { status: 500 });
   }
 } 

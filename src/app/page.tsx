@@ -2,18 +2,26 @@
 import { useState } from "react";
 import Image from "next/image";
 
-interface ComicPanel {
+interface Panel {
   imageUrl: string;
   caption: string;
+  id: string;
+}
+
+interface PredictionResponse {
+  predictions: Panel[];
+  error?: string;
+  status?: string;
+  output?: string[];
 }
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [panels, setPanels] = useState<any[]>([]);
+  const [panels, setPanels] = useState<Panel[]>([]);
 
-  const pollPrediction = async (id: string) => {
+  const pollPrediction = async (id: string): Promise<PredictionResponse> => {
     const response = await fetch(`/api/predictions/${id}`);
     const prediction = await response.json();
     return prediction;
@@ -26,23 +34,22 @@ export default function Home() {
     setPanels([]);
 
     try {
-      // Create predictions
       const response = await fetch('/api/predictions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
       });
 
-      const data = await response.json();
+      const data = await response.json() as PredictionResponse;
       if (!response.ok) throw new Error(data.error);
 
       // Poll each prediction until complete
       const completedPanels = await Promise.all(
-        data.predictions.map(async (pred: any) => {
+        data.predictions.map(async (pred: Panel) => {
           let prediction;
           do {
             prediction = await pollPrediction(pred.id);
-            await new Promise(r => setTimeout(r, 1000)); // Wait 1 second between polls
+            await new Promise(r => setTimeout(r, 1000));
           } while (prediction.status !== 'succeeded' && prediction.status !== 'failed');
 
           if (prediction.status === 'failed') {
@@ -50,15 +57,20 @@ export default function Home() {
           }
 
           return {
-            imageUrl: prediction.output[0],
-            caption: pred.caption
+            imageUrl: prediction.output?.[0] || '',
+            caption: pred.caption,
+            id: pred.id
           };
         })
       );
 
       setPanels(completedPanels);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -155,3 +167,4 @@ export default function Home() {
     </main>
   );
 }
+
