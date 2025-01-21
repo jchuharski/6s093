@@ -12,12 +12,18 @@ const replicate = new Replicate({
   auth: process.env.API_KEY,
 });
 
+type Props = {
+  params: {
+    id: string;
+  };
+};
+
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  _request: Request,
+  props: Props
 ) {
   try {
-    const prediction = await replicate.predictions.get(params.id) as PredictionResponse;
+    const prediction = await replicate.predictions.get(props.params.id) as PredictionResponse;
 
     if (prediction?.error) {
       return NextResponse.json({ error: prediction.error }, { status: 500 });
