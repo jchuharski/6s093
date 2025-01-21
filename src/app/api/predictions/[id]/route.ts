@@ -12,18 +12,12 @@ const replicate = new Replicate({
   auth: process.env.API_KEY,
 });
 
-type RouteSegment = {
-  params: {
-    id: string;
-  };
-};
-
 export async function GET(
-  request: NextRequest,
-  context: RouteSegment
+  _request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const prediction = await replicate.predictions.get(context.params.id) as PredictionResponse;
+    const prediction = await replicate.predictions.get(params.id) as PredictionResponse;
 
     if (prediction?.error) {
       return NextResponse.json({ error: prediction.error }, { status: 500 });
