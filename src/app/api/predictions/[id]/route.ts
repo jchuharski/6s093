@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Replicate from "replicate";
 
 interface PredictionResponse {
@@ -13,12 +13,11 @@ const replicate = new Replicate({
 });
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = await params.id;
-    const prediction = await replicate.predictions.get(id) as PredictionResponse;
+    const prediction = await replicate.predictions.get(params.id) as PredictionResponse;
 
     if (prediction?.error) {
       return NextResponse.json({ error: prediction.error }, { status: 500 });
