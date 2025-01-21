@@ -1,101 +1,157 @@
+'use client'
+import { useState } from "react";
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+interface ComicPanel {
+  imageUrl: string;
+  caption: string;
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function Home() {
+  const [prompt, setPrompt] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [panels, setPanels] = useState<any[]>([]);
+
+  const pollPrediction = async (id: string) => {
+    const response = await fetch(`/api/predictions/${id}`);
+    const prediction = await response.json();
+    return prediction;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setPanels([]);
+
+    try {
+      // Create predictions
+      const response = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+
+      // Poll each prediction until complete
+      const completedPanels = await Promise.all(
+        data.predictions.map(async (pred: any) => {
+          let prediction;
+          do {
+            prediction = await pollPrediction(pred.id);
+            await new Promise(r => setTimeout(r, 1000)); // Wait 1 second between polls
+          } while (prediction.status !== 'succeeded' && prediction.status !== 'failed');
+
+          if (prediction.status === 'failed') {
+            throw new Error(`Panel generation failed: ${prediction.error}`);
+          }
+
+          return {
+            imageUrl: prediction.output[0],
+            caption: pred.caption
+          };
+        })
+      );
+
+      setPanels(completedPanels);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen p-8 bg-gray-900 text-gray-100">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Sleek header */}
+        <header className="text-center space-y-4">
+          <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
+            The Cat Chronicles
+          </h1>
+          <p className="text-gray-400 text-xl font-light tracking-wider">
+            WHERE FELINE TALES COME TO LIFE
+          </p>
+        </header>
+
+        {/* Noir-style form */}
+        <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-purple-500/20">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-purple-400 mb-3 font-medium tracking-wide uppercase text-sm">
+                Create Your Feline Fantasy
+              </label>
+              <textarea 
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder="In the shadows of the night, Ivy prowls..."
+                rows={4}
+                className="w-full p-4 bg-gray-900 border border-purple-500/30 rounded-xl 
+                          focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                          text-gray-100 placeholder-gray-500"
+              />
+            </div>
+            <button 
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 
+                         hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl
+                         transition-all transform hover:scale-[1.02] disabled:opacity-50
+                         disabled:cursor-not-allowed disabled:hover:scale-100
+                         shadow-lg shadow-purple-500/20"
+              type="submit"
+              disabled={isLoading}
+            >
+              {isLoading ? "Crafting Your Tale..." : "Generate Comic 🐱‍👤"}
+            </button>
+          </form>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {error && (
+          <div className="w-full p-4 bg-red-900/20 text-red-400 rounded-xl border border-red-800">
+            {error}
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="w-full text-center">
+            <div className="inline-block px-6 py-3 bg-gray-800 rounded-xl text-purple-400">
+              <span className="animate-pulse">Summoning your comic from the shadows...</span>
+            </div>
+          </div>
+        )}
+
+        {panels.length > 0 && (
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-8">
+            {panels.map((panel, index) => (
+              <div key={index} className="flex flex-col items-center gap-4 group">
+                <div className="relative w-full aspect-square rounded-xl overflow-hidden 
+                              shadow-2xl shadow-purple-500/20 transform transition-transform 
+                              duration-300 group-hover:scale-[1.02]">
+                  <Image
+                    src={panel.imageUrl}
+                    alt={`Comic panel ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw"
+                    priority={index < 3}
+                  />
+                </div>
+                <p className="text-center text-gray-400 italic px-4 font-light">
+                  {panel.caption}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
