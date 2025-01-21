@@ -21,7 +21,7 @@ interface RouteParams {
 }
 
 export async function GET(
-  request: NextRequest,
+//   request: NextRequest,
   routeParams: RouteParams
 ) {
   try {
