@@ -12,22 +12,28 @@ const replicate = new Replicate({
   auth: process.env.API_KEY,
 });
 
+interface Context {
+  params: {
+    id: string;
+  };
+}
+
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-): Promise<NextResponse> {
+  _req: Request,
+  context: Context
+): Promise<Response> {
   try {
-    const prediction = await replicate.predictions.get(params.id) as PredictionResponse;
+    const prediction = await replicate.predictions.get(context.params.id) as PredictionResponse;
 
     if (prediction?.error) {
-      return NextResponse.json({ error: prediction.error }, { status: 500 });
+      return Response.json({ error: prediction.error }, { status: 500 });
     }
 
-    return NextResponse.json(prediction);
+    return Response.json(prediction);
   } catch (error) {
     if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return Response.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ error: 'An unknown error occurred' }, { status: 500 });
+    return Response.json({ error: 'An unknown error occurred' }, { status: 500 });
   }
 } 
