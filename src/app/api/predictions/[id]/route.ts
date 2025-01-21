@@ -12,15 +12,9 @@ const replicate = new Replicate({
   auth: process.env.API_KEY,
 });
 
-interface Context {
-  params: {
-    id: string;
-  };
-}
-
 export async function GET(
-  _req: Request,
-  context: Context
+  request: Request,
+  context: { params: { id: string } }
 ): Promise<Response> {
   try {
     const prediction = await replicate.predictions.get(context.params.id) as PredictionResponse;
