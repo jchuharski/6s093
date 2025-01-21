@@ -13,11 +13,11 @@ const replicate = new Replicate({
 });
 
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  _request: Request,
+  { params }: { params: Record<string, string | string[]> }
 ): Promise<Response> {
   try {
-    const prediction = await replicate.predictions.get(context.params.id) as PredictionResponse;
+    const prediction = await replicate.predictions.get(params.id as string) as PredictionResponse;
 
     if (prediction?.error) {
       return Response.json({ error: prediction.error }, { status: 500 });
