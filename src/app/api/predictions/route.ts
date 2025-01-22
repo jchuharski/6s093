@@ -113,11 +113,8 @@ Format the output as JSON with this structure:
 
     return NextResponse.json({ predictions }, { status: 201 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json({ error: 'An unknown error occurred' }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 } 
